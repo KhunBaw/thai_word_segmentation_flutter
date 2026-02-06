@@ -11,7 +11,15 @@ The main documentation file with complete API reference and features overview.
 - Troubleshooting guide
 - Technical details
 
-### 2. [USAGE_GUIDE.md](./USAGE_GUIDE.md)
+### 2. [INSTALLATION.md](./INSTALLATION.md)
+Complete installation guide with multiple methods.
+- Installation via Git (HTTPS, SSH, tokens)
+- Installation via local path
+- Monorepo setup
+- Troubleshooting
+- Access control setup (Private repositories)
+
+### 3. [USAGE_GUIDE.md](./USAGE_GUIDE.md)
 Comprehensive guide with detailed examples for all use cases.
 - Core classes usage
 - Widget guide
@@ -20,7 +28,7 @@ Comprehensive guide with detailed examples for all use cases.
 - Performance tips
 - Full API reference
 
-### 3. [example/README.md](./example/README.md)
+### 4. [example/README.md](./example/README.md)
 Guide for running and understanding the example Flutter application.
 - Installation steps
 - Features demonstrated
@@ -31,7 +39,22 @@ Guide for running and understanding the example Flutter application.
 
 ## เอกสารภาษาไทย 🇹🇭
 
-### 1. [USAGE_GUIDE_TH.md](./USAGE_GUIDE_TH.md) ⭐ อ่านอันดับ 1
+### 1. [INSTALLATION.md](./INSTALLATION.md) ⭐ (ต้องอ่านก่อน)
+คู่มือการติดตั้งอย่างละเอียด (ไทย-English)
+
+**เนื้อหา:**
+- 🔗 ติดตั้งผ่าน Git (HTTPS, SSH, Personal Token)
+- 📁 ติดตั้งจากเส้นทางในเครื่อง (Local Path)
+- 🎯 ตัวอย่าง pubspec.yaml
+- ⚙️ SSH vs HTTPS
+- 🔐 การตั้งค่า Access Token
+- 🚀 ขั้นตอนการติดตั้ง
+- 🔄 การอัปเดต
+- ❌ การแก้ไขปัญหา
+
+**ใช้สำหรับ:** ทุกคนที่ต้องการติดตั้งปลั๊กอิน
+
+### 2. [USAGE_GUIDE_TH.md](./USAGE_GUIDE_TH.md) ⭐⭐ อ่านอันดับ 2
 คู่มือการใช้งานเชิงลึกสำหรับผู้พูดภาษาไทย
 
 **เนื้อหา:**
@@ -49,7 +72,7 @@ Guide for running and understanding the example Flutter application.
 
 **ใช้สำหรับ:** ผู้ใช้ที่ต้องการเรียนรู้อย่างละเอียด
 
-### 2. [QUICKSTART_TH.md](./QUICKSTART_TH.md) ⭐⭐ อ่านอันดับ 2
+### 3. [QUICKSTART_TH.md](./QUICKSTART_TH.md) ⭐⭐⭐ อ่านอันดับ 3
 เริ่มต้นใช้งานอย่างรวดเร็วด้วย 5 ตัวอย่างยอดนิยม
 
 **เนื้อหา:**
@@ -64,7 +87,7 @@ Guide for running and understanding the example Flutter application.
 
 **ใช้สำหรับ:** ผู้ใช้ที่ต้องการเริ่มต้นอย่างรวดเร็ว
 
-### 3. [example/main.dart](./example/main.dart)
+### 4. [example/main.dart](./example/main.dart)
 ตัวอย่างแอปพลิเคชัน Flutter ที่สมบูรณ์
 
 **แสดงให้เห็น:**
@@ -80,6 +103,7 @@ Guide for running and understanding the example Flutter application.
 
 | เอกสาร | ภาษา | ระดับความลึก | เวลาที่ใช้ | เหมาะสำหรับ |
 |------|------|-----------|---------|----------|
+| INSTALLATION.md | ไทย/EN | ⭐⭐ | 15 นาที | ติดตั้ง |
 | QUICKSTART_TH.md | ไทย | ⭐ | 5-10 นาที | เริ่มต้น |
 | USAGE_GUIDE_TH.md | ไทย | ⭐⭐⭐ | 30 นาที | ผู้ใช้ทั่วไป |
 | README.md | English | ⭐⭐ | 20 นาที | ผู้พัฒนา |
@@ -92,14 +116,19 @@ Guide for running and understanding the example Flutter application.
 
 ### สำหรับผู้ใช้ไทย 🇹🇭
 
+**ขั้นที่ 0: ติดตั้ง (15 นาที)**
+```
+ทำตาม → INSTALLATION.md
+```
+
 **ขั้นที่ 1: เริ่มต้นอย่างรวดเร็ว (5 นาที)**
 ```
 อ่าน → QUICKSTART_TH.md (ส่วน "5 ตัวอย่างที่ใช้บ่อย")
 ```
 
-**ขั้นที่ 2: ติดตั้งและทดลอง (10 นาที)**
+**ขั้นที่ 2: ทดลองใช้งาน (10 นาที)**
 ```
-ทำตาม → QUICKSTART_TH.md (ส่วน "การติดตั้ง")
+ทำตาม → QUICKSTART_TH.md (ตัวอย่าง 1-5)
 ```
 
 **ขั้นที่ 3: เรียนรู้เชิงลึก (30 นาที)**

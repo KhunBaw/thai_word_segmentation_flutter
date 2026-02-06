@@ -1,10 +1,10 @@
 name: thai_word_segmentation
 description: "A Flutter plugin for Thai text word segmentation and line breaking. Provides intelligent word breaking, line wrapping, and custom widgets for proper Thai text display in Flutter applications."
 version: 0.0.1
-homepage:
+homepage: https://github.com/KhunBaw/thai_word_segmentation_flutter.git
 
 environment:
-  sdk: ^3.10.7
+  sdk: ^3.9.2
   flutter: ">=1.17.0"
 
 dependencies:

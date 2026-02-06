@@ -19,12 +19,25 @@ A Flutter plugin for intelligent Thai text word segmentation and line breaking. 
 
 ## Installation
 
+### Option 1: From Git Repository (Recommended)
+
 Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   thai_word_segmentation:
-    path: ./
+    git:
+      url: https://gitlab.com/your-username/thai_word_segmentation.git
+```
+
+### Option 2: From Local Path
+
+For local development:
+
+```yaml
+dependencies:
+  thai_word_segmentation:
+    path: ./thai_word_segmentation
 ```
 
 Then run:
@@ -32,6 +45,8 @@ Then run:
 ```bash
 flutter pub get
 ```
+
+**For detailed installation instructions (Git, SSH, Private Repos, etc.), see [INSTALLATION.md](./INSTALLATION.md)**
 
 ## Usage
 
