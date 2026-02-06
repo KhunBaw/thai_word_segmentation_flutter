@@ -24,41 +24,77 @@ class ThaiLineBreakText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (maxWidth != null) {
-      return _buildLineBreakText(maxWidth!);
+      return _buildLineBreakText(context, maxWidth!);
     }
 
     // If maxWidth is not provided, use available width from parent
     return LayoutBuilder(
       builder: (context, constraints) {
-        return _buildLineBreakText(constraints.maxWidth);
+        // Use the constrained width, or a reasonable default if unconstrained
+        final width = constraints.maxWidth.isFinite ? constraints.maxWidth : 300.0; // Default width if parent is unconstrained
+        return _buildLineBreakText(context, width);
       },
     );
   }
 
-  Widget _buildLineBreakText(double width) {
+  Widget _buildLineBreakText(BuildContext context, double width) {
     final breaker = ThaiLineBreaker();
+    final textScaler = MediaQuery.textScalerOf(context);
+
+    // Subtract a tiny margin to prevent edge clipping due to anti-aliasing
+    final double effectiveWidth = width > 1.0 ? width - 0.2 : width;
+
     final lines = useThaiAwareBreaking
-        ? breaker.breakLinesThaiAware(text, textStyle: style, maxWidth: width)
-        : breaker.breakLines(text, textStyle: style, maxWidth: width);
+        ? breaker.breakLinesThaiAware(text, textStyle: style, maxWidth: effectiveWidth, textScaler: textScaler)
+        : breaker.breakLines(text, textStyle: style, maxWidth: effectiveWidth, textScaler: textScaler);
 
-    int displayLines = lines.length;
-    if (maxLines != null && maxLines! > 0) {
-      displayLines = minLines(lines.length, maxLines!);
+    List<String> displayedLines = List.from(lines);
+
+    if (maxLines != null && maxLines! > 0 && overflow == TextOverflow.ellipsis) {
+      final displayCount = lines.length < maxLines! ? lines.length : maxLines!;
+      displayedLines = lines.sublist(0, displayCount);
+
+      if (lines.length > displayCount && displayedLines.isNotEmpty) {
+        String lastLine = displayedLines[displayedLines.length - 1].trimRight();
+        var chars = lastLine.characters;
+
+        while (chars.isNotEmpty) {
+          final painter = TextPainter(
+            text: TextSpan(text: '${chars.toString()}…', style: style),
+            textDirection: TextDirection.ltr,
+            textScaler: textScaler,
+          );
+          painter.layout();
+          if (painter.width <= effectiveWidth - 0.5 || chars.length <= 1) {
+            break;
+          }
+          chars = chars.take(chars.length - 1);
+        }
+        displayedLines[displayedLines.length - 1] = '${chars.toString()}…';
+      }
     }
-
-    List<String> displayedLines = lines.sublist(0, displayLines);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: _getCrossAxisAlignment(textAlign),
       children: [
-        for (int i = 0; i < displayedLines.length; i++)
-          Text(displayedLines[i], style: style, textAlign: textAlign, maxLines: 1, overflow: overflow),
+        for (final line in displayedLines)
+          Text(line, style: style, textAlign: textAlign, maxLines: 1, softWrap: false, overflow: TextOverflow.visible),
       ],
     );
   }
 
-  int minLines(int a, int b) => a < b ? a : b;
+  CrossAxisAlignment _getCrossAxisAlignment(TextAlign alignment) {
+    switch (alignment) {
+      case TextAlign.right:
+      case TextAlign.end:
+        return CrossAxisAlignment.end;
+      case TextAlign.center:
+        return CrossAxisAlignment.center;
+      default:
+        return CrossAxisAlignment.start;
+    }
+  }
 }
 
 /// A widget that displays Thai text with custom styling based on words
@@ -82,8 +118,9 @@ class ThaiSegmentedText extends StatelessWidget {
   Widget build(BuildContext context) {
     // final segmenter = ThaiTextSegmenter();
     final breaker = ThaiLineBreaker();
+    final textScaler = MediaQuery.textScalerOf(context);
 
-    final lines = breaker.breakLinesThaiAware(text, textStyle: defaultStyle, maxWidth: maxWidth);
+    final lines = breaker.breakLinesThaiAware(text, textStyle: defaultStyle, maxWidth: maxWidth, textScaler: textScaler);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -128,6 +165,7 @@ class ThaiRichText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final breaker = ThaiLineBreaker();
+    final textScaler = MediaQuery.textScalerOf(context);
     final fullText = spans.fold<String>('', (prev, span) => prev + span.text);
 
     if (!enableLineBreaking) {
@@ -139,7 +177,12 @@ class ThaiRichText extends StatelessWidget {
       );
     }
 
-    final lines = breaker.breakLinesThaiAware(fullText, textStyle: _getDefaultStyle(), maxWidth: maxWidth);
+    final lines = breaker.breakLinesThaiAware(
+      fullText,
+      textStyle: _getDefaultStyle(),
+      maxWidth: maxWidth,
+      textScaler: textScaler,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,

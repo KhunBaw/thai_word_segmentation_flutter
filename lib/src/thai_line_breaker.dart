@@ -6,59 +6,48 @@ class ThaiLineBreaker {
 
   /// Breaks text into lines based on maximum width and text style
   /// Returns a list of lines that fit within the specified width
-  List<String> breakLines(String text, {required TextStyle textStyle, required double maxWidth}) {
+  List<String> breakLines(
+    String text, {
+    required TextStyle textStyle,
+    required double maxWidth,
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
     if (text.isEmpty) return [];
 
     final List<String> lines = [];
     final List<String> words = _segmenter.segment(text);
 
     String currentLine = '';
-    double currentWidth = 0;
 
     for (String word in words) {
-      // Skip empty words
       if (word.isEmpty) continue;
 
-      // Handle explicit line breaks
       if (word == '\n') {
-        if (currentLine.isNotEmpty) {
-          lines.add(currentLine.trim());
-        }
+        lines.add(currentLine);
         currentLine = '';
-        currentWidth = 0;
         continue;
       }
 
-      // Calculate width of current word
-      final wordPainter = TextPainter(
-        text: TextSpan(text: word, style: textStyle),
+      String testLine = currentLine.isEmpty ? word : currentLine + word;
+
+      final painter = TextPainter(
+        text: TextSpan(text: testLine, style: textStyle),
         textDirection: TextDirection.ltr,
+        textScaler: textScaler,
       );
-      wordPainter.layout();
+      painter.layout();
 
-      final wordWidth = wordPainter.width;
-      // final spaceWidth = word == ' '
-      //     ? 0.0
-      //     : 4.0; // Approximate space width
-
-      // Check if word fits in current line
       if (currentLine.isEmpty) {
         currentLine = word;
-        currentWidth = wordWidth;
-      } else if (currentWidth + wordWidth <= maxWidth) {
-        currentLine += word;
-        currentWidth += wordWidth;
+      } else if (painter.width <= maxWidth + 0.05) {
+        // Tiny epsilon for floating point
+        currentLine = testLine;
       } else {
-        // Word doesn't fit, start a new line
-        if (currentLine.isNotEmpty) {
-          lines.add(currentLine);
-        }
+        lines.add(currentLine);
         currentLine = word;
-        currentWidth = wordWidth;
       }
     }
 
-    // Add last line
     if (currentLine.isNotEmpty) {
       lines.add(currentLine);
     }
@@ -68,47 +57,44 @@ class ThaiLineBreaker {
 
   /// Breaks text into lines with Thai-aware word breaking
   /// More sophisticated approach that considers Thai text characteristics
-  List<String> breakLinesThaiAware(String text, {required TextStyle textStyle, required double maxWidth}) {
+  List<String> breakLinesThaiAware(
+    String text, {
+    required TextStyle textStyle,
+    required double maxWidth,
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
     if (text.isEmpty) return [];
 
     final List<String> lines = [];
     final List<String> syllables = _segmenter.groupBySyllables(text);
 
     String currentLine = '';
-    double currentWidth = 0;
 
     for (String syllable in syllables) {
       if (syllable.isEmpty) continue;
 
-      if (syllable.contains('\n')) {
-        if (currentLine.isNotEmpty) {
-          lines.add(currentLine);
-        }
+      if (syllable == '\n') {
+        lines.add(currentLine);
         currentLine = '';
-        currentWidth = 0;
         continue;
       }
 
-      final syllablePainter = TextPainter(
-        text: TextSpan(text: syllable, style: textStyle),
-        textDirection: TextDirection.ltr,
-      );
-      syllablePainter.layout();
+      String testLine = currentLine.isEmpty ? syllable : currentLine + syllable;
 
-      final syllableWidth = syllablePainter.width;
+      final painter = TextPainter(
+        text: TextSpan(text: testLine, style: textStyle),
+        textDirection: TextDirection.ltr,
+        textScaler: textScaler,
+      );
+      painter.layout();
 
       if (currentLine.isEmpty) {
         currentLine = syllable;
-        currentWidth = syllableWidth;
-      } else if (currentWidth + syllableWidth <= maxWidth) {
-        currentLine += syllable;
-        currentWidth += syllableWidth;
+      } else if (painter.width <= maxWidth + 0.05) {
+        currentLine = testLine;
       } else {
-        if (currentLine.isNotEmpty) {
-          lines.add(currentLine);
-        }
+        lines.add(currentLine);
         currentLine = syllable;
-        currentWidth = syllableWidth;
       }
     }
 
@@ -120,8 +106,13 @@ class ThaiLineBreaker {
   }
 
   /// Breaks text and returns with line numbers and positions
-  List<LineBreakInfo> breakLinesWithInfo(String text, {required TextStyle textStyle, required double maxWidth}) {
-    final lines = breakLines(text, textStyle: textStyle, maxWidth: maxWidth);
+  List<LineBreakInfo> breakLinesWithInfo(
+    String text, {
+    required TextStyle textStyle,
+    required double maxWidth,
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
+    final lines = breakLines(text, textStyle: textStyle, maxWidth: maxWidth, textScaler: textScaler);
 
     return List.generate(
       lines.length,
@@ -129,7 +120,7 @@ class ThaiLineBreaker {
         lineNumber: index + 1,
         text: lines[index],
         startOffset: _calculateOffset(text, lines, index),
-        width: _calculateLineWidth(lines[index], textStyle),
+        width: _calculateLineWidth(lines[index], textStyle, textScaler),
       ),
     );
   }
@@ -144,10 +135,11 @@ class ThaiLineBreaker {
   }
 
   /// Calculates the width of a line in pixels
-  double _calculateLineWidth(String line, TextStyle textStyle) {
+  double _calculateLineWidth(String line, TextStyle textStyle, TextScaler textScaler) {
     final painter = TextPainter(
       text: TextSpan(text: line, style: textStyle),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     );
     painter.layout();
     return painter.width;

@@ -7,21 +7,36 @@ class ThaiTextSegmenter {
   static const int _thaiEnd = 0x0E7F;
 
   // Thai character classes
-  // static const List<int> _thaiVowels = [0x0E31, 0x0E34, 0x0E35, 0x0E36, 0x0E37, 0x0E47, 0x0E48, 0x0E49, 0x0E4A, 0x0E4B, 0x0E4C, 0x0E4D];
-  // static const List<int> _thaiToneMarks = [0x0E48, 0x0E49, 0x0E4A, 0x0E4B, 0x0E4C];
+  // All Thai vowels and combining marks that should attach to consonants
   static const List<int> _thaiDiacritics = [
-    0x0E31,
-    0x0E34,
-    0x0E35,
-    0x0E36,
-    0x0E37,
-    0x0E47,
-    0x0E48,
-    0x0E49,
-    0x0E4A,
-    0x0E4B,
-    0x0E4C,
-    0x0E4D,
+    // Tone marks
+    0x0E48, // ่ (mai tho)
+    0x0E49, // ้ (mai tri)
+    0x0E4A, // ๊ (mai chattawa)
+    0x0E4B, // ๋ (mai chattawa)
+    // Vowel signs above
+    0x0E31, // ํ (mai han akat)
+    0x0E34, // ิ (sara i)
+    0x0E35, // ี (sara ii)
+    0x0E36, // ึ (sara ue)
+    0x0E37, // ื (sara uee)
+    // Vowel signs below
+    0x0E38, // ุ (sara u)
+    0x0E39, // ู (sara uu)
+    // Other combining marks
+    0x0E3A, // ฺ (phinthu)
+    0x0E46, // ๖ (maiyamok)
+    0x0E4C, // ์ (thanthakhat)
+    0x0E4D, // ์ (nikhahit)
+    // Vowel stems (can be standalone or with consonants)
+    0x0E32, // า (sara aa)
+    0x0E40, // เ (sara e)
+    0x0E41, // แ (sara ae)
+    0x0E42, // โ (sara o)
+    0x0E43, // ไ (sara ai maimuan)
+    0x0E44, // ใ (sara ai maimalai)
+    0x0E45, // ๅ (lakkhangyao)
+    0x0E47, // ๗ (yamakkan)
   ];
 
   // Thai consonants that can be word boundaries
@@ -89,6 +104,14 @@ class ThaiTextSegmenter {
     return _thaiConsonants.contains(codeUnit);
   }
 
+  /// Checks if character is Thai vowel stem (standalone vowel)
+  static bool isThaiVowelStem(String char) {
+    if (char.isEmpty) return false;
+    int codeUnit = char.codeUnitAt(0);
+    // Vowel stems that can appear before consonants
+    return [0x0E32, 0x0E40, 0x0E41, 0x0E42, 0x0E43, 0x0E44, 0x0E45].contains(codeUnit);
+  }
+
   /// Checks if character is Thai vowel or diacritic
   static bool isThaiDiacritic(String char) {
     if (char.isEmpty) return false;
@@ -96,65 +119,105 @@ class ThaiTextSegmenter {
     return _thaiDiacritics.contains(codeUnit);
   }
 
-  /// Segments Thai text into words
-  /// Returns a list of words based on Thai syllable structure
+  /// Segments Thai text into syllables/words using a more cohesive rule-based approach
   List<String> segment(String text) {
     if (text.isEmpty) return [];
 
-    List<String> words = [];
-    String currentWord = '';
+    final List<String> result = [];
+    final characters = text.characters;
+    String current = '';
 
-    for (int i = 0; i < text.length; i++) {
-      String char = text[i];
-      // int codeUnit = char.codeUnitAt(0);
+    for (int i = 0; i < characters.length; i++) {
+      final String char = characters.elementAt(i);
 
-      // Handle Thai characters
-      if (isThaiCharacter(char)) {
-        if (isThaiConsonant(char)) {
-          // Start of a new syllable
-          if (currentWord.isNotEmpty) {
-            words.add(currentWord);
-          }
-          currentWord = char;
-        } else if (isThaiDiacritic(char)) {
-          // Diacritics attach to consonants
-          currentWord += char;
+      if (!isThaiCharacter(char)) {
+        if (current.isNotEmpty && isThaiCharacter(current[0])) {
+          result.add(current);
+          current = '';
+        }
+
+        if (char == ' ' || char == '\n' || char == '\t') {
+          if (current.isNotEmpty) result.add(current);
+          result.add(char);
+          current = '';
         } else {
-          // Thai vowels
-          currentWord += char;
+          current += char;
         }
-      } else if (char == ' ' || char == '\n' || char == '\t') {
-        // Space or newline breaks words
-        if (currentWord.isNotEmpty) {
-          words.add(currentWord);
-          currentWord = '';
-        }
-        // Keep space as a separate token for layout purposes
-        words.add(char);
-      } else {
-        // Non-Thai characters (English, numbers, punctuation)
-        if (currentWord.isNotEmpty && isThaiCharacter(currentWord[0])) {
-          words.add(currentWord);
-          currentWord = char;
-        } else {
-          currentWord += char;
-        }
+        continue;
+      }
 
-        // Check if next character is Thai
-        if (i + 1 < text.length && isThaiCharacter(text[i + 1]) && !isThaiDiacritic(text[i + 1])) {
-          if (currentWord.isNotEmpty) {
-            words.add(currentWord);
-            currentWord = '';
+      // Thai logic
+      if (current.isNotEmpty && !isThaiCharacter(current[0])) {
+        result.add(current);
+        current = '';
+      }
+
+      bool shouldBreak = false;
+      if (current.isNotEmpty) {
+        int charCode = char.codeUnitAt(0);
+        bool isPreVowel = [0x0E40, 0x0E41, 0x0E42, 0x0E43, 0x0E44].contains(charCode);
+
+        if (isPreVowel) {
+          // Rule: Always break before a pre-vowel (starts a new syllable)
+          shouldBreak = true;
+        } else if (isThaiConsonant(char)) {
+          // Check the state of the current segment
+          bool hasConsonant = current.characters.any((c) => isThaiConsonant(c));
+          bool hasVowelOrDiacritic = current.characters.any((c) => isThaiCharacter(c) && !isThaiConsonant(c));
+
+          if (hasConsonant && hasVowelOrDiacritic) {
+            // We already have a CV pattern.
+            // Peek next character: if it's a following vowel/diacritic, then THIS consonant is a new start.
+            bool nextIsFollowingVowel = false;
+            if (i + 1 < characters.length) {
+              final next = characters.elementAt(i + 1);
+              if (isThaiCharacter(next) && !isThaiConsonant(next)) {
+                int nextCode = next.codeUnitAt(0);
+                bool nextIsPreVowel = [0x0E40, 0x0E41, 0x0E42, 0x0E43, 0x0E44].contains(nextCode);
+                if (!nextIsPreVowel) {
+                  nextIsFollowingVowel = true;
+                }
+              }
+            }
+
+            if (nextIsFollowingVowel) {
+              shouldBreak = true;
+            } else {
+              // Look-ahead to see if next is another consonant.
+              // If we already have a final consonant, we must break.
+              // Simple: assume a syllable can have at most one final consonant.
+              int cCount = current.characters.where((c) => isThaiConsonant(c)).length;
+              if (cCount >= 2) {
+                // Probably already has CVC or CCV.
+                shouldBreak = true;
+              } else {
+                // CV + [C]. This C is likely a final consonant.
+                shouldBreak = false;
+              }
+            }
+          } else if (hasConsonant && !hasVowelOrDiacritic) {
+            // Current has C but no vowel. Check for cluster (e.g., 'กร', 'ปล').
+            int cCount = current.characters.where((c) => isThaiConsonant(c)).length;
+            if (cCount >= 2) {
+              // Try to avoid breaking mid-cluster if possible, but 2 is a safe limit for basic rules.
+              shouldBreak = true;
+            }
           }
         }
       }
+
+      if (shouldBreak) {
+        result.add(current);
+        current = char;
+      } else {
+        current += char;
+      }
     }
 
-    if (currentWord.isNotEmpty) {
-      words.add(currentWord);
+    if (current.isNotEmpty) {
+      result.add(current);
     }
-
-    return words;
+    return result;
   }
 
   /// Segments text while preserving spaces
@@ -164,42 +227,8 @@ class ThaiTextSegmenter {
 
   /// Groups words into syllables based on Thai text rules
   List<String> groupBySyllables(String text) {
-    List<String> words = segment(text);
-    List<String> syllables = [];
-    String currentSyllable = '';
-
-    for (String word in words) {
-      if (word == ' ' || word == '\n' || word == '\t') {
-        if (currentSyllable.isNotEmpty) {
-          syllables.add(currentSyllable);
-          currentSyllable = '';
-        }
-        continue;
-      }
-
-      // Check if word is Thai
-      if (word.isNotEmpty && isThaiCharacter(word[0])) {
-        // If we have a current syllable, add it to list
-        if (currentSyllable.isNotEmpty && !isThaiCharacter(currentSyllable[0])) {
-          syllables.add(currentSyllable);
-          currentSyllable = word;
-        } else {
-          currentSyllable += word;
-        }
-      } else {
-        // Non-Thai word
-        if (currentSyllable.isNotEmpty) {
-          syllables.add(currentSyllable);
-          currentSyllable = '';
-        }
-        currentSyllable += word;
-      }
-    }
-
-    if (currentSyllable.isNotEmpty) {
-      syllables.add(currentSyllable);
-    }
-
-    return syllables;
+    // Current implementation of segment() is already quite granular (syllable level).
+    // We just return the segments but ensure we don't over-glue Thai text.
+    return segment(text);
   }
 }
